@@ -599,7 +599,25 @@ function BF:CreateMinimapMenu()
 
     f:SetScript("OnShow", function()
         if not f.currentTab then BFC_ShowMenuTab(f, "bars") end
+
+        -- The configuration menu itself is the edit mode.
+        -- Opening it always enables Configure Mode so all bars can be edited immediately.
+        BF:EnsureDB()
+        if not BF:IsConfigMode() then
+            ButtonForgeClassicDB.settings.configMode = true
+            BF:ApplyConfigModeToAllBars()
+        end
+
         BF:RefreshMinimapMenu()
+    end)
+
+    f:SetScript("OnHide", function()
+        -- Leaving the menu always returns ButtonForge to normal play mode.
+        BF:EnsureDB()
+        if BF:IsConfigMode() then
+            ButtonForgeClassicDB.settings.configMode = false
+            BF:ApplyConfigModeToAllBars()
+        end
     end)
 
     self.MinimapMenu = f
