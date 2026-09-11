@@ -22,6 +22,11 @@ function BF:CreateBar(save)
     if not save then
         save = self:GetDefaultBarSave()
         if not save then return nil end
+
+        -- New bars should be immediately understandable and visible.
+        -- Keep empty slots enabled by default for every freshly created bar.
+        save.showGrid = true
+
         table.insert(ButtonForgeClassicDB.bars, save)
     end
 
@@ -208,7 +213,7 @@ function BF:ApplyBarBackground(bar, save)
         return
     end
 
-    local hide = save.hideBackground or (ButtonForgeClassicDB and ButtonForgeClassicDB.settings and ButtonForgeClassicDB.settings.hideBarBackground)
+    local hide = save.hideBackground and true or false
     if hide then
         bar:SetBackdropColor(0, 0, 0, 0)
         if bar.SetBackdropBorderColor then
@@ -495,7 +500,7 @@ end
 
 function BF:CreateControlsForBar(bar)
     bar.controls = {}
-    local img = self.ImagesDir or "Interface\\AddOns\\ButtonForge-Classic-Reforged\\Images\\"
+    local img = self.ImagesDir or "Interface\\AddOns\\ButtonForgeClassic\\Images\\"
 
     table.insert(bar.controls, self:CreateControlButton(bar, "+", self:T("ADD_COLUMN"), function()
         BF:SetActiveBar(this.parentBar)

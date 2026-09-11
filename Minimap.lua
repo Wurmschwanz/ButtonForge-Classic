@@ -1,4 +1,4 @@
--- ButtonForge Classic - minimap button + central configuration menu
+-- ButtonForge Classic - minimap button + simplified central configuration menu
 local BF = BFClassic
 
 function BF:GetMinimapButtonAngle()
@@ -71,6 +71,98 @@ local function BFC_SetButtonEnabled(button, enabled)
     end
 end
 
+local function BFC_CreateSelectionBorder(button, prefix)
+    button.selectionBorder = {}
+
+    local top = button:CreateTexture(prefix .. "Top", "OVERLAY")
+    top:SetTexture(1, 0.82, 0.15, 1)
+    top:SetHeight(2)
+    top:SetPoint("TOPLEFT", button, "TOPLEFT", 2, -2)
+    top:SetPoint("TOPRIGHT", button, "TOPRIGHT", -2, -2)
+    table.insert(button.selectionBorder, top)
+
+    local bottom = button:CreateTexture(prefix .. "Bottom", "OVERLAY")
+    bottom:SetTexture(1, 0.82, 0.15, 1)
+    bottom:SetHeight(2)
+    bottom:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 2, 2)
+    bottom:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
+    table.insert(button.selectionBorder, bottom)
+
+    local left = button:CreateTexture(prefix .. "Left", "OVERLAY")
+    left:SetTexture(1, 0.82, 0.15, 1)
+    left:SetWidth(2)
+    left:SetPoint("TOPLEFT", button, "TOPLEFT", 2, -2)
+    left:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 2, 2)
+    table.insert(button.selectionBorder, left)
+
+    local right = button:CreateTexture(prefix .. "Right", "OVERLAY")
+    right:SetTexture(1, 0.82, 0.15, 1)
+    right:SetWidth(2)
+    right:SetPoint("TOPRIGHT", button, "TOPRIGHT", -2, -2)
+    right:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
+    table.insert(button.selectionBorder, right)
+
+    local i
+    for i = 1, table.getn(button.selectionBorder) do
+        button.selectionBorder[i]:Hide()
+    end
+end
+
+local function BFC_SetSelectorActive(button, active)
+    if not button then return end
+    local fs = button.GetFontString and button:GetFontString()
+    if fs then
+        if active then
+            fs:SetTextColor(1, 0.82, 0.15)
+        else
+            fs:SetTextColor(1, 1, 1)
+        end
+    end
+
+    if button.selectionBorder then
+        local i
+        for i = 1, table.getn(button.selectionBorder) do
+            if active then
+                button.selectionBorder[i]:Show()
+            else
+                button.selectionBorder[i]:Hide()
+            end
+        end
+    end
+end
+
+local function BFC_SetTabVisual(button, active, text)
+    if not button then return end
+    button:SetText(active and ("[ " .. text .. " ]") or text)
+    local fs = button.GetFontString and button:GetFontString()
+    if fs then
+        if active then
+            fs:SetTextColor(1, 0.82, 0.15)
+        else
+            fs:SetTextColor(1, 1, 1)
+        end
+    end
+end
+
+local function BFC_ShowMenuTab(f, tabName)
+    if not f then return end
+    f.currentTab = tabName
+
+    if f.barsPanel then
+        if tabName == "bars" then f.barsPanel:Show() else f.barsPanel:Hide() end
+    end
+    if f.appearancePanel then
+        if tabName == "appearance" then f.appearancePanel:Show() else f.appearancePanel:Hide() end
+    end
+    if f.advancedPanel then
+        if tabName == "advanced" then f.advancedPanel:Show() else f.advancedPanel:Hide() end
+    end
+
+    BFC_SetTabVisual(f.barsTab, tabName == "bars", "Bars")
+    BFC_SetTabVisual(f.appearanceTab, tabName == "appearance", "Appearance")
+    BFC_SetTabVisual(f.advancedTab, tabName == "advanced", "Advanced")
+end
+
 function BF:RefreshMinimapMenu()
     local f = self.MinimapMenu
     if not f then return end
@@ -101,6 +193,7 @@ function BF:RefreshMinimapMenu()
         end
     end
 
+    local activeBar = self:GetActiveBar()
     local i
     if f.barButtons then
         for i = 1, table.getn(f.barButtons) do
@@ -110,25 +203,26 @@ function BF:RefreshMinimapMenu()
                 selector:SetText("Bar " .. tostring(i))
                 selector:SetAlpha(1)
                 if selector.Enable then selector:Enable() end
-                if self:GetActiveBar() == bar then
-                    selector:SetText("Bar " .. tostring(i) .. " *")
-                end
+                BFC_SetSelectorActive(selector, activeBar == bar)
             else
                 selector:SetText("Bar " .. tostring(i))
                 selector:SetAlpha(0.35)
                 if selector.Disable then selector:Disable() end
+                BFC_SetSelectorActive(selector, false)
             end
         end
     end
 
-    local bar = self:GetActiveBar()
+    local bar = activeBar
     local hasBar = bar and bar.save
 
     if f.activeName then
         if hasBar then
-            f.activeName:SetText("Active Bar: " .. tostring(bar.save.name or ("Bar " .. tostring(bar.save.id or "?"))))
+            f.activeName:SetText("Selected: " .. tostring(bar.save.name or ("Bar " .. tostring(bar.save.id or "?"))))
+            f.activeName:SetTextColor(1, 0.82, 0.15)
         else
-            f.activeName:SetText("Active Bar: none")
+            f.activeName:SetText("Selected: none")
+            f.activeName:SetTextColor(0.75, 0.75, 0.75)
         end
     end
 
@@ -211,8 +305,8 @@ function BF:CreateMinimapMenu()
     if self.MinimapMenu then return self.MinimapMenu end
 
     local f = CreateFrame("Frame", "ButtonForgeClassicMinimapMenu", UIParent)
-    f:SetWidth(330)
-    f:SetHeight(506)
+    f:SetWidth(350)
+    f:SetHeight(450)
     f:SetFrameStrata("DIALOG")
     f:SetFrameLevel(20)
     f:SetBackdrop({
@@ -238,49 +332,69 @@ function BF:CreateMinimapMenu()
     local title = BFC_CreateLabel(f, "ButtonForgeClassicMinimapMenuTitle", "ButtonForge Classic", "GameFontNormalLarge")
     title:SetPoint("TOP", f, "TOP", 0, -18)
 
-    local sub = BFC_CreateLabel(f, "ButtonForgeClassicMinimapMenuSub", "Central configuration", "GameFontHighlightSmall")
+    local sub = BFC_CreateLabel(f, "ButtonForgeClassicMinimapMenuSub", "Simple bar configuration", "GameFontHighlightSmall")
     sub:SetPoint("TOP", title, "BOTTOM", 0, -2)
 
     local close = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapMenuClose", 24, 22, "X")
     close:SetPoint("TOPRIGHT", f, "TOPRIGHT", -15, -13)
     close:SetScript("OnClick", function() f:Hide() end)
 
-    local general = BFC_CreateLabel(f, "ButtonForgeClassicMinimapMenuGeneral", "GENERAL", "GameFontNormalSmall")
-    general:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -62)
+    f.barsTab = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapBarsTab", 96, 24, "Bars")
+    f.barsTab:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -60)
+    f.barsTab:SetScript("OnClick", function() BFC_ShowMenuTab(f, "bars") end)
 
-    f.configButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapConfig", 138, 24, "Configure Mode")
-    f.configButton:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -80)
-    f.configButton:SetScript("OnClick", function()
-        BF:ToggleConfigMode()
-        BF:RefreshMinimapMenu()
-    end)
+    f.appearanceTab = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapAppearanceTab", 96, 24, "Appearance")
+    f.appearanceTab:SetPoint("LEFT", f.barsTab, "RIGHT", 4, 0)
+    f.appearanceTab:SetScript("OnClick", function() BFC_ShowMenuTab(f, "appearance") end)
 
-    f.keybindButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapKeybind", 138, 24, "Keybind Mode")
-    f.keybindButton:SetPoint("LEFT", f.configButton, "RIGHT", 8, 0)
-    f.keybindButton:SetScript("OnClick", function()
-        BF:ToggleKeybindMode()
-        BF:RefreshMinimapMenu()
-    end)
+    f.advancedTab = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapAdvancedTab", 96, 24, "Advanced")
+    f.advancedTab:SetPoint("LEFT", f.appearanceTab, "RIGHT", 4, 0)
+    f.advancedTab:SetScript("OnClick", function() BFC_ShowMenuTab(f, "advanced") end)
 
-    f.newBarButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapNewBar", 284, 24, "Create New Bar")
-    f.newBarButton:SetPoint("TOPLEFT", f.configButton, "BOTTOMLEFT", 0, -6)
+    f.activeName = BFC_CreateLabel(f, "ButtonForgeClassicMinimapActiveName", "Selected: none", "GameFontHighlight")
+    f.activeName:SetPoint("TOPLEFT", f, "TOPLEFT", 24, -96)
+
+    f.activeControls = {}
+
+    -- Bars panel
+    f.barsPanel = CreateFrame("Frame", "ButtonForgeClassicMinimapBarsPanel", f)
+    f.barsPanel:SetWidth(306)
+    f.barsPanel:SetHeight(300)
+    f.barsPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -120)
+
+    f.newBarButton = BFC_CreateMenuButton(f.barsPanel, "ButtonForgeClassicMinimapNewBar", 306, 24, "Create New Bar")
+    f.newBarButton:SetPoint("TOPLEFT", f.barsPanel, "TOPLEFT", 0, 0)
     f.newBarButton:SetScript("OnClick", function()
-        BF:CreateBar()
-        BF:ApplyConfigModeToAllBars()
+        local newBar = BF:CreateBar()
+        if newBar then
+            BF:SetActiveBar(newBar)
+
+            -- A freshly created empty bar must be visible immediately.
+            -- Enter Configure Mode automatically so its empty slots are shown.
+            if not BF:IsConfigMode() then
+                BF:ToggleConfigMode()
+            else
+                BF:ApplyConfigModeToAllBars()
+            end
+
+            if newBar.Show then newBar:Show() end
+            if BF.RefreshBarButtons then BF:RefreshBarButtons(newBar) end
+        end
         BF:RefreshMinimapMenu()
     end)
 
-    local barsLabel = BFC_CreateLabel(f, "ButtonForgeClassicMinimapBarsLabel", "SELECT BAR", "GameFontNormalSmall")
+    local barsLabel = BFC_CreateLabel(f.barsPanel, "ButtonForgeClassicMinimapBarsLabel", "SELECT BAR", "GameFontNormalSmall")
     barsLabel:SetPoint("TOPLEFT", f.newBarButton, "BOTTOMLEFT", 0, -12)
 
     f.barButtons = {}
     local i
     for i = 1, 8 do
-        local b = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapBar" .. tostring(i), 66, 22, "Bar " .. tostring(i))
+        local b = BFC_CreateMenuButton(f.barsPanel, "ButtonForgeClassicMinimapBar" .. tostring(i), 70, 22, "Bar " .. tostring(i))
         local row = math.floor((i - 1) / 4)
         local col = (i - 1) - (row * 4)
-        b:SetPoint("TOPLEFT", f, "TOPLEFT", 22 + (col * 72), -157 - (row * 27))
+        b:SetPoint("TOPLEFT", f.barsPanel, "TOPLEFT", col * 78, -58 - (row * 27))
         b.barId = i
+        BFC_CreateSelectionBorder(b, "ButtonForgeClassicMinimapBar" .. tostring(i) .. "Selected")
         b:SetScript("OnClick", function()
             local bar = BFC_FindBarById(this.barId)
             if bar then
@@ -291,23 +405,20 @@ function BF:CreateMinimapMenu()
         table.insert(f.barButtons, b)
     end
 
-    f.activeName = BFC_CreateLabel(f, "ButtonForgeClassicMinimapActiveName", "Active Bar: none", "GameFontHighlight")
-    f.activeName:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -218)
-
     local function AddMinusValuePlus(prefix, y, labelText, onMinus, onPlus)
-        local label = BFC_CreateLabel(f, prefix .. "Label", labelText, "GameFontNormalSmall")
-        label:SetPoint("TOPLEFT", f, "TOPLEFT", 22, y)
+        local label = BFC_CreateLabel(f.barsPanel, prefix .. "Label", labelText, "GameFontNormalSmall")
+        label:SetPoint("TOPLEFT", f.barsPanel, "TOPLEFT", 0, y)
 
-        local minus = BFC_CreateMenuButton(f, prefix .. "Minus", 32, 22, "-")
-        minus:SetPoint("TOPLEFT", f, "TOPLEFT", 157, y + 5)
+        local minus = BFC_CreateMenuButton(f.barsPanel, prefix .. "Minus", 32, 22, "-")
+        minus:SetPoint("TOPLEFT", f.barsPanel, "TOPLEFT", 146, y + 5)
         minus:SetScript("OnClick", onMinus)
 
-        local value = BFC_CreateLabel(f, prefix .. "Value", "-", "GameFontHighlight")
+        local value = BFC_CreateLabel(f.barsPanel, prefix .. "Value", "-", "GameFontHighlight")
         value:SetWidth(58)
         value:SetJustifyH("CENTER")
         value:SetPoint("LEFT", minus, "RIGHT", 2, 0)
 
-        local plus = BFC_CreateMenuButton(f, prefix .. "Plus", 32, 22, "+")
+        local plus = BFC_CreateMenuButton(f.barsPanel, prefix .. "Plus", 32, 22, "+")
         plus:SetPoint("LEFT", value, "RIGHT", 2, 0)
         plus:SetScript("OnClick", onPlus)
 
@@ -316,9 +427,7 @@ function BF:CreateMinimapMenu()
         return value
     end
 
-    f.activeControls = {}
-
-    f.colsValue = AddMinusValuePlus("ButtonForgeClassicMinimapCols", -242, "Columns", function()
+    f.colsValue = AddMinusValuePlus("ButtonForgeClassicMinimapCols", -122, "Columns", function()
         local bar = BF:GetActiveBar()
         if bar then BF:SetActiveBarCols((bar.save.cols or 1) - 1) end
         BF:RefreshMinimapMenu()
@@ -328,7 +437,7 @@ function BF:CreateMinimapMenu()
         BF:RefreshMinimapMenu()
     end)
 
-    f.rowsValue = AddMinusValuePlus("ButtonForgeClassicMinimapRows", -273, "Rows", function()
+    f.rowsValue = AddMinusValuePlus("ButtonForgeClassicMinimapRows", -153, "Rows", function()
         local bar = BF:GetActiveBar()
         if bar then BF:SetActiveBarRows((bar.save.rows or 1) - 1) end
         BF:RefreshMinimapMenu()
@@ -338,7 +447,7 @@ function BF:CreateMinimapMenu()
         BF:RefreshMinimapMenu()
     end)
 
-    f.scaleValue = AddMinusValuePlus("ButtonForgeClassicMinimapScale", -304, "Scale", function()
+    f.scaleValue = AddMinusValuePlus("ButtonForgeClassicMinimapScale", -184, "Scale", function()
         local bar = BF:GetActiveBar()
         if bar then BF:SetActiveBarScale((bar.save.scale or 1) - 0.1) end
         BF:RefreshMinimapMenu()
@@ -348,8 +457,8 @@ function BF:CreateMinimapMenu()
         BF:RefreshMinimapMenu()
     end)
 
-    f.lockButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapLock", 138, 24, "Position Lock")
-    f.lockButton:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -337)
+    f.lockButton = BFC_CreateMenuButton(f.barsPanel, "ButtonForgeClassicMinimapLock", 149, 24, "Position Lock")
+    f.lockButton:SetPoint("TOPLEFT", f.barsPanel, "TOPLEFT", 0, -220)
     f.lockButton:SetScript("OnClick", function()
         local bar = BF:GetActiveBar()
         if bar then BF:SetActiveBarLocked(not bar.save.locked) end
@@ -357,7 +466,7 @@ function BF:CreateMinimapMenu()
     end)
     table.insert(f.activeControls, f.lockButton)
 
-    f.actionLockButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapActionLock", 138, 24, "Action Lock")
+    f.actionLockButton = BFC_CreateMenuButton(f.barsPanel, "ButtonForgeClassicMinimapActionLock", 149, 24, "Action Lock")
     f.actionLockButton:SetPoint("LEFT", f.lockButton, "RIGHT", 8, 0)
     f.actionLockButton:SetScript("OnClick", function()
         local bar = BF:GetActiveBar()
@@ -366,76 +475,8 @@ function BF:CreateMinimapMenu()
     end)
     table.insert(f.activeControls, f.actionLockButton)
 
-    f.backgroundButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapBackground", 138, 24, "Background")
-    f.backgroundButton:SetPoint("TOPLEFT", f.lockButton, "BOTTOMLEFT", 0, -6)
-    f.backgroundButton:SetScript("OnClick", function()
-        local bar = BF:GetActiveBar()
-        if bar then BF:ToggleBarBackground(bar) end
-        BF:RefreshMinimapMenu()
-    end)
-    table.insert(f.activeControls, f.backgroundButton)
-
-    f.gridButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapGrid", 138, 24, "Empty Slots")
-    f.gridButton:SetPoint("LEFT", f.backgroundButton, "RIGHT", 8, 0)
-    f.gridButton:SetScript("OnClick", function()
-        local bar = BF:GetActiveBar()
-        if bar then BF:ToggleBarGrid(bar) end
-        BF:RefreshMinimapMenu()
-    end)
-    table.insert(f.activeControls, f.gridButton)
-
-    f.mouseoverButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapMouseover", 138, 24, "Mouseover")
-    f.mouseoverButton:SetPoint("TOPLEFT", f.backgroundButton, "BOTTOMLEFT", 0, -6)
-    f.mouseoverButton:SetScript("OnClick", function()
-        local bar = BF:GetActiveBar()
-        if bar then BF:ToggleBarMouseover(bar) end
-        BF:RefreshMinimapMenu()
-    end)
-    table.insert(f.activeControls, f.mouseoverButton)
-
-    f.macroNamesButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapMacroNames", 138, 24, "Macro Names: ON")
-    f.macroNamesButton:SetPoint("LEFT", f.mouseoverButton, "RIGHT", 8, 0)
-    f.macroNamesButton:SetScript("OnClick", function()
-        BF:ToggleMacroNames()
-        BF:RefreshMinimapMenu()
-    end)
-
-    local delayLabel = BFC_CreateLabel(f, "ButtonForgeClassicMinimapDelayLabel", "Mouseover Delay", "GameFontNormalSmall")
-    delayLabel:SetPoint("TOPLEFT", f.mouseoverButton, "BOTTOMLEFT", 0, -14)
-
-    f.delayMinus = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapDelayMinus", 32, 22, "-")
-    f.delayMinus:SetPoint("TOPLEFT", f, "TOPLEFT", 157, -435)
-    f.delayMinus:SetScript("OnClick", function()
-        local bar = BF:GetActiveBar()
-        if bar then
-            local value = (bar.save.mouseoverDelay or 1) - 0.5
-            if value < 0 then value = 0 end
-            BF:SetBarMouseoverDelay(bar, value)
-        end
-        BF:RefreshMinimapMenu()
-    end)
-    table.insert(f.activeControls, f.delayMinus)
-
-    f.mouseoverDelayValue = BFC_CreateLabel(f, "ButtonForgeClassicMinimapDelayValue", "-", "GameFontHighlight")
-    f.mouseoverDelayValue:SetWidth(58)
-    f.mouseoverDelayValue:SetJustifyH("CENTER")
-    f.mouseoverDelayValue:SetPoint("LEFT", f.delayMinus, "RIGHT", 2, 0)
-
-    f.delayPlus = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapDelayPlus", 32, 22, "+")
-    f.delayPlus:SetPoint("LEFT", f.mouseoverDelayValue, "RIGHT", 2, 0)
-    f.delayPlus:SetScript("OnClick", function()
-        local bar = BF:GetActiveBar()
-        if bar then
-            local value = (bar.save.mouseoverDelay or 1) + 0.5
-            if value > 5 then value = 5 end
-            BF:SetBarMouseoverDelay(bar, value)
-        end
-        BF:RefreshMinimapMenu()
-    end)
-    table.insert(f.activeControls, f.delayPlus)
-
-    f.deleteButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapDelete", 284, 24, "Delete Bar")
-    f.deleteButton:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -469)
+    f.deleteButton = BFC_CreateMenuButton(f.barsPanel, "ButtonForgeClassicMinimapDelete", 306, 24, "Delete Bar")
+    f.deleteButton:SetPoint("TOPLEFT", f.barsPanel, "TOPLEFT", 0, -258)
     f.deleteButton:SetScript("OnClick", function()
         local bar = BF:GetActiveBar()
         if not bar or not bar.save then return end
@@ -451,11 +492,118 @@ function BF:CreateMinimapMenu()
     end)
     table.insert(f.activeControls, f.deleteButton)
 
+    -- Appearance panel
+    f.appearancePanel = CreateFrame("Frame", "ButtonForgeClassicMinimapAppearancePanel", f)
+    f.appearancePanel:SetWidth(306)
+    f.appearancePanel:SetHeight(300)
+    f.appearancePanel:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -120)
+
+    local appearanceHint = BFC_CreateLabel(f.appearancePanel, "ButtonForgeClassicMinimapAppearanceHint", "Appearance of the selected bar", "GameFontHighlightSmall")
+    appearanceHint:SetPoint("TOPLEFT", f.appearancePanel, "TOPLEFT", 0, 0)
+
+    f.backgroundButton = BFC_CreateMenuButton(f.appearancePanel, "ButtonForgeClassicMinimapBackground", 149, 24, "Background")
+    f.backgroundButton:SetPoint("TOPLEFT", f.appearancePanel, "TOPLEFT", 0, -28)
+    f.backgroundButton:SetScript("OnClick", function()
+        local bar = BF:GetActiveBar()
+        if bar then BF:ToggleBarBackground(bar) end
+        BF:RefreshMinimapMenu()
+    end)
+    table.insert(f.activeControls, f.backgroundButton)
+
+    f.gridButton = BFC_CreateMenuButton(f.appearancePanel, "ButtonForgeClassicMinimapGrid", 149, 24, "Empty Slots")
+    f.gridButton:SetPoint("LEFT", f.backgroundButton, "RIGHT", 8, 0)
+    f.gridButton:SetScript("OnClick", function()
+        local bar = BF:GetActiveBar()
+        if bar then BF:ToggleBarGrid(bar) end
+        BF:RefreshMinimapMenu()
+    end)
+    table.insert(f.activeControls, f.gridButton)
+
+    f.mouseoverButton = BFC_CreateMenuButton(f.appearancePanel, "ButtonForgeClassicMinimapMouseover", 149, 24, "Mouseover")
+    f.mouseoverButton:SetPoint("TOPLEFT", f.backgroundButton, "BOTTOMLEFT", 0, -8)
+    f.mouseoverButton:SetScript("OnClick", function()
+        local bar = BF:GetActiveBar()
+        if bar then BF:ToggleBarMouseover(bar) end
+        BF:RefreshMinimapMenu()
+    end)
+    table.insert(f.activeControls, f.mouseoverButton)
+
+    f.macroNamesButton = BFC_CreateMenuButton(f.appearancePanel, "ButtonForgeClassicMinimapMacroNames", 149, 24, "Macro Names: ON")
+    f.macroNamesButton:SetPoint("LEFT", f.mouseoverButton, "RIGHT", 8, 0)
+    f.macroNamesButton:SetScript("OnClick", function()
+        BF:ToggleMacroNames()
+        BF:RefreshMinimapMenu()
+    end)
+
+    local delayLabel = BFC_CreateLabel(f.appearancePanel, "ButtonForgeClassicMinimapDelayLabel", "Mouseover Delay", "GameFontNormalSmall")
+    delayLabel:SetPoint("TOPLEFT", f.mouseoverButton, "BOTTOMLEFT", 0, -20)
+
+    f.delayMinus = BFC_CreateMenuButton(f.appearancePanel, "ButtonForgeClassicMinimapDelayMinus", 32, 22, "-")
+    f.delayMinus:SetPoint("TOPLEFT", f.appearancePanel, "TOPLEFT", 146, -98)
+    f.delayMinus:SetScript("OnClick", function()
+        local bar = BF:GetActiveBar()
+        if bar then
+            local value = (bar.save.mouseoverDelay or 1) - 0.5
+            if value < 0 then value = 0 end
+            BF:SetBarMouseoverDelay(bar, value)
+        end
+        BF:RefreshMinimapMenu()
+    end)
+    table.insert(f.activeControls, f.delayMinus)
+
+    f.mouseoverDelayValue = BFC_CreateLabel(f.appearancePanel, "ButtonForgeClassicMinimapDelayValue", "-", "GameFontHighlight")
+    f.mouseoverDelayValue:SetWidth(58)
+    f.mouseoverDelayValue:SetJustifyH("CENTER")
+    f.mouseoverDelayValue:SetPoint("LEFT", f.delayMinus, "RIGHT", 2, 0)
+
+    f.delayPlus = BFC_CreateMenuButton(f.appearancePanel, "ButtonForgeClassicMinimapDelayPlus", 32, 22, "+")
+    f.delayPlus:SetPoint("LEFT", f.mouseoverDelayValue, "RIGHT", 2, 0)
+    f.delayPlus:SetScript("OnClick", function()
+        local bar = BF:GetActiveBar()
+        if bar then
+            local value = (bar.save.mouseoverDelay or 1) + 0.5
+            if value > 5 then value = 5 end
+            BF:SetBarMouseoverDelay(bar, value)
+        end
+        BF:RefreshMinimapMenu()
+    end)
+    table.insert(f.activeControls, f.delayPlus)
+
+    -- Advanced panel
+    f.advancedPanel = CreateFrame("Frame", "ButtonForgeClassicMinimapAdvancedPanel", f)
+    f.advancedPanel:SetWidth(306)
+    f.advancedPanel:SetHeight(300)
+    f.advancedPanel:SetPoint("TOPLEFT", f, "TOPLEFT", 22, -120)
+
+    local advancedHint = BFC_CreateLabel(f.advancedPanel, "ButtonForgeClassicMinimapAdvancedHint", "Editing and keybind tools", "GameFontHighlightSmall")
+    advancedHint:SetPoint("TOPLEFT", f.advancedPanel, "TOPLEFT", 0, 0)
+
+    f.configButton = BFC_CreateMenuButton(f.advancedPanel, "ButtonForgeClassicMinimapConfig", 149, 24, "Configure Mode")
+    f.configButton:SetPoint("TOPLEFT", f.advancedPanel, "TOPLEFT", 0, -28)
+    f.configButton:SetScript("OnClick", function()
+        BF:ToggleConfigMode()
+        BF:RefreshMinimapMenu()
+    end)
+
+    f.keybindButton = BFC_CreateMenuButton(f.advancedPanel, "ButtonForgeClassicMinimapKeybind", 149, 24, "Keybind Mode")
+    f.keybindButton:SetPoint("LEFT", f.configButton, "RIGHT", 8, 0)
+    f.keybindButton:SetScript("OnClick", function()
+        BF:ToggleKeybindMode()
+        BF:RefreshMinimapMenu()
+    end)
+
+    local advancedInfo = BFC_CreateLabel(f.advancedPanel, "ButtonForgeClassicMinimapAdvancedInfo", "New bars automatically enter Configure Mode so they are visible immediately.", "GameFontHighlightSmall")
+    advancedInfo:SetWidth(300)
+    advancedInfo:SetJustifyH("LEFT")
+    advancedInfo:SetPoint("TOPLEFT", f.configButton, "BOTTOMLEFT", 0, -18)
+
     f:SetScript("OnShow", function()
+        if not f.currentTab then BFC_ShowMenuTab(f, "bars") end
         BF:RefreshMinimapMenu()
     end)
 
     self.MinimapMenu = f
+    BFC_ShowMenuTab(f, "bars")
     self:RefreshMinimapMenu()
     return f
 end
