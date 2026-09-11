@@ -1,7 +1,7 @@
 -- ButtonForge Classic - constants for Vanilla 1.12
 local BF = BFClassic
 
-BF.Version = "1.0.7"
+BF.Version = "1.0.10"
 BF.AddonName = "ButtonForgeClassic"
 BF.Title = "ButtonForge Classic"
 
@@ -14,7 +14,7 @@ BF.MinScale = 0.5
 BF.MaxScale = 2.0
 BF.MinMouseoverDelay = 0
 BF.MaxMouseoverDelay = 5
-BF.ImagesDir = "Interface\\AddOns\\ButtonForge-Classic-Reforged\\Images\\"
+BF.ImagesDir = "Interface\\AddOns\\ButtonForgeClassic\\Images\\"
 BF.EmptyIcon = "Interface\\Buttons\\UI-Quickslot"
 BF.BorderIcon = "Interface\\Buttons\\UI-Quickslot2"
 BF.QuestionIcon = "Interface\\Icons\\INV_Misc_QuestionMark"

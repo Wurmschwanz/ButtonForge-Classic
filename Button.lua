@@ -260,6 +260,15 @@ function BF:CreateEmptyButton(parent, index)
     button.hotkey:SetPoint("TOPRIGHT", button, "TOPRIGHT", -2, -2)
     button.hotkey:SetText("")
 
+    -- Vanilla-style macro name text. GetActionText() returns the macro name for
+    -- macro actions and nil for normal spells/items, so this adds no polling.
+    button.macroName = button:CreateFontString(name .. "MacroName", "OVERLAY", "GameFontHighlightSmall")
+    button.macroName:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 3, 3)
+    button.macroName:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
+    button.macroName:SetHeight(10)
+    button.macroName:SetJustifyH("CENTER")
+    button.macroName:SetText("")
+
     button:SetScript("OnReceiveDrag", BF.Button_OnReceiveDrag)
     button:SetScript("OnDragStart", BF.Button_OnDragStart)
     button:SetScript("OnDragStop", BF.Button_OnDragStop)
@@ -494,6 +503,9 @@ function BF:RefreshButton(button)
     end
 
     button.count:SetText("")
+    if button.macroName then
+        button.macroName:SetText("")
+    end
 
     -- Keep visuals constrained even after reloads or client-side texture refreshes.
     if button.icon then
@@ -529,6 +541,17 @@ function BF:RefreshButton(button)
                 button.count:SetText(tostring(count))
             end
         end
+
+        -- GetActionText() is the native Vanilla API for the text attached to an
+        -- action slot. For macro actions this is the macro name; normal spells
+        -- and items return nil, so only macros receive a label.
+        if button.macroName and GetActionText and ButtonForgeClassicDB and
+           ButtonForgeClassicDB.settings and ButtonForgeClassicDB.settings.showMacroNames ~= false then
+            local actionText = GetActionText(slot)
+            if actionText and actionText ~= "" then
+                button.macroName:SetText(actionText)
+            end
+        end
     else
         button.icon:SetTexture(nil)
     end
@@ -536,6 +559,12 @@ function BF:RefreshButton(button)
     self:UpdateButtonCooldown(button)
     self:UpdateButtonHotkey(button)
     self:UpdateButtonRange(button)
+end
+
+function BF:ToggleMacroNames()
+    self:EnsureDB()
+    ButtonForgeClassicDB.settings.showMacroNames = not ButtonForgeClassicDB.settings.showMacroNames
+    self:RefreshAllButtons()
 end
 
 function BF:IsTemporaryGridActive()

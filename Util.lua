@@ -114,6 +114,9 @@ function BF:EnsureDB()
     if ButtonForgeClassicDB.settings.keybindMode == nil then
         ButtonForgeClassicDB.settings.keybindMode = false
     end
+    if ButtonForgeClassicDB.settings.showMacroNames == nil then
+        ButtonForgeClassicDB.settings.showMacroNames = true
+    end
 end
 function BF:IsBarIdUsed(id)
     self:EnsureDB()

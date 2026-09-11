@@ -93,6 +93,14 @@ function BF:RefreshMinimapMenu()
         end
     end
 
+    if f.macroNamesButton then
+        if ButtonForgeClassicDB.settings.showMacroNames ~= false then
+            f.macroNamesButton:SetText("Macro Names: ON")
+        else
+            f.macroNamesButton:SetText("Macro Names: OFF")
+        end
+    end
+
     local i
     if f.barButtons then
         for i = 1, table.getn(f.barButtons) do
@@ -376,7 +384,7 @@ function BF:CreateMinimapMenu()
     end)
     table.insert(f.activeControls, f.gridButton)
 
-    f.mouseoverButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapMouseover", 284, 24, "Mouseover")
+    f.mouseoverButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapMouseover", 138, 24, "Mouseover")
     f.mouseoverButton:SetPoint("TOPLEFT", f.backgroundButton, "BOTTOMLEFT", 0, -6)
     f.mouseoverButton:SetScript("OnClick", function()
         local bar = BF:GetActiveBar()
@@ -384,6 +392,13 @@ function BF:CreateMinimapMenu()
         BF:RefreshMinimapMenu()
     end)
     table.insert(f.activeControls, f.mouseoverButton)
+
+    f.macroNamesButton = BFC_CreateMenuButton(f, "ButtonForgeClassicMinimapMacroNames", 138, 24, "Macro Names: ON")
+    f.macroNamesButton:SetPoint("LEFT", f.mouseoverButton, "RIGHT", 8, 0)
+    f.macroNamesButton:SetScript("OnClick", function()
+        BF:ToggleMacroNames()
+        BF:RefreshMinimapMenu()
+    end)
 
     local delayLabel = BFC_CreateLabel(f, "ButtonForgeClassicMinimapDelayLabel", "Mouseover Delay", "GameFontNormalSmall")
     delayLabel:SetPoint("TOPLEFT", f.mouseoverButton, "BOTTOMLEFT", 0, -14)
