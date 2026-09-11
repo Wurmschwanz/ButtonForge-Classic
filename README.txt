@@ -1,66 +1,188 @@
-ButtonForge Classic v1.0.9
+# ⚒️ ButtonForge Classic Reforged
 
-For Turtle WoW / Vanilla 1.12 / OctoWoW.
+**ButtonForge Classic Reforged** is a recreation of the original **ButtonForge** addon for **Vanilla World of Warcraft 1.12**, designed for **Turtle WoW** and other Vanilla-based servers.
 
-INSTALLATION
-------------
-GitHub Download ZIP:
-1. Download the repository as ZIP.
-2. Extract it.
-3. Rename the extracted folder from:
-   ButtonForge-Classic-Reforged-main
-   to:
-   ButtonForge-Classic-Reforged
-4. Put the folder into Interface\AddOns\
+Create additional fully customizable action bars while keeping the original Vanilla look and feel.
 
-The addon folder must be named exactly:
+---
+
+## 📥 Download & Installation
+
+1. Click **Code → Download ZIP** on GitHub.
+2. Extract the downloaded archive.
+3. Rename the folder:
+
+```text
+ButtonForge-Classic-Reforged-main
+```
+
+to:
+
+```text
 ButtonForge-Classic-Reforged
+```
 
-The matching TOC file is:
-ButtonForge-Classic-Reforged.toc
+4. Move the folder into:
 
-For Turtle WoW / Vanilla 1.12.
+```text
+World of Warcraft\Interface\AddOns\
+```
 
-Basic commands:
-/bf new       Create a new bar
-/bf config    Toggle Configure Mode
-/bf bg        Toggle active bar background
-/bf bg all    Toggle all bar backgrounds
-/bf cols 6    Set columns
-/bf rows 2    Set rows
-/bf scale 1.2 Set scale
-/bf lock      Lock active bar
-/bf unlock    Unlock active bar
-/bf delete    Delete active bar
-/bf reset     Reset settings
-/bf mouseover        Toggle mouseover mode for active bar
-/bf mouseoverdelay 1.5  Set mouseover hide delay (seconds)
+The final structure should look like:
 
-v1.0.1:
-- New mouseover bar mode: fades in on hover, fades out after a per-bar,
-  configurable delay (default 1s). Bar stays clickable while faded out.
-- Config Mode, Keybind Mode and active drag/drop keep bars fully visible.
+```text
+Interface
+└── AddOns
+    └── ButtonForge-Classic-Reforged
+        ├── ButtonForge-Classic-Reforged.toc
+        ├── Core.lua
+        ├── Bar.lua
+        ├── Button.lua
+        └── ...
+```
 
-v0.3.21:
-- Centralized visible UI strings in Locale.lua.
-- English cleanup for bar controls and chat messages.
+Restart the game after installation.
 
-Stable base:
-- Multiple bars, drag/drop, tooltips, stack counts, configure mode, minimap button.
-- Central minimap configuration menu for bar selection and settings.
-- Left-click opens the menu, right-click toggles Configure Mode, Shift + Left-click toggles Keybind Mode.
+---
 
+# ✨ Features
 
-v0.4.9
-- Fixed normal-mode drag & drop by showing temporary drop slots on bar hover.
-- Blocked BUTTON1/BUTTON2 keybind assignment for safety.
+## 🎯 Action Bars
 
-Version 0.4.15 swap timing stability.
+* Create multiple fully customizable action bars
+* Freely move and position bars anywhere on the screen
+* Adjustable rows and columns
+* Adjustable button scale
+* Lock or unlock individual bars
+* Optional bar backgrounds
+* Automatically hide unused buttons outside configuration mode
+* Mouseover mode with configurable fade-in and fade-out
+* Native Vanilla-style appearance
 
+---
 
-v0.4.15: Internal slot-to-slot dragging now swaps ButtonForge ActionSlot references instead of using PickupAction/PlaceAction.
+## 🖱️ Drag & Drop
 
-0.4.19: Real per-character SavedVariables for bars, settings and keybinds.
+* Drag spells directly from the spellbook
+* Drag items directly from your bags
+* Drag macros from the macro window
+* Move actions between ButtonForge buttons
+* Swap actions between occupied buttons
+* Drag actions between ButtonForge and Blizzard action bars
+* Empty drop slots automatically appear when needed
 
+---
 
-0.4.24: Safe runtime keybindings. ButtonForge no longer calls SaveBindings(). Keybinds are stored in addon SavedVariables and applied at login only.
+## ⌨️ Keybindings
+
+* Built-in keybinding mode
+* Assign keys directly to ButtonForge buttons
+* Keybindings stay attached to the physical button position
+* Keybinds are saved with ButtonForge
+* Safe runtime bindings without modifying your normal WoW keybinding file
+
+---
+
+## 🖥️ Configuration
+
+ButtonForge can be configured through its built-in interface.
+
+Use:
+
+```text
+/bf
+```
+
+or:
+
+```text
+/bfc
+```
+
+You can also use the **ButtonForge minimap button** to access the configuration menu.
+
+---
+
+## 🛠️ Commands
+
+```text
+/bf new
+```
+
+Create a new action bar.
+
+```text
+/bf delete
+```
+
+Delete the currently selected bar.
+
+```text
+/bf config
+```
+
+Toggle configuration mode.
+
+```text
+/bf keybind
+```
+
+Toggle keybinding mode.
+
+```text
+/bf cols 6
+```
+
+Set the number of columns.
+
+```text
+/bf rows 2
+```
+
+Set the number of rows.
+
+```text
+/bf size 6 2
+```
+
+Set columns and rows at the same time.
+
+```text
+/bf scale 1.2
+```
+
+Change the scale of the active bar.
+
+```text
+/bf lock
+```
+
+Lock the active bar.
+
+```text
+/bf unlock
+```
+
+Unlock the active bar.
+
+```text
+/bf bg
+```
+
+Toggle the background of the active bar.
+
+```text
+/bf bg all
+```
+
+Toggle backgrounds for all ButtonForge bars.
+
+```text
+/bf grid
+```
+
+Toggle empty button slots.
+
+```text
+/bf re
+```
