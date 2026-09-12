@@ -311,6 +311,7 @@ function BF:CreateEmptyButton(parent, index)
     button:SetScript("OnDragStop", BF.Button_OnDragStop)
     button:SetScript("OnClick", BF.Button_OnClick)
     button:SetScript("OnMouseDown", BF.Button_OnMouseDown)
+    button:SetScript("OnMouseUp", BF.Button_OnMouseUp)
     button:EnableMouseWheel(true)
     button:SetScript("OnMouseWheel", BF.Button_OnMouseWheel)
     button:SetScript("OnEnter", BF.Button_OnEnter)
@@ -527,13 +528,13 @@ function BF:RefreshButton(button)
     local keybindMode = self:IsKeybindMode()
     local showGrid = button.parentBar and button.parentBar.save and button.parentBar.save.showGrid
     local tempGrid = self:IsTemporaryGridActive()
+    local menuEditPreview = self.MenuEditPreviewActive and true or false
 
-    -- Empty-slot visibility is controlled by the per-bar Show Empty Slots
-    -- setting even while Configure Mode is active. Keybind Mode is the one
-    -- exception because every button must remain visible/selectable there.
-    -- While dragging/swapping actions, empty slots temporarily reappear so the
-    -- action can always be dropped into an unused position.
-    if (not hasAction) and (not showGrid) and (not tempGrid) and (not keybindMode) then
+    -- The open configuration menu IS the edit mode. While it is open, every
+    -- active slot on every created bar must be visible, regardless of the saved
+    -- per-bar Empty Slots setting. The saved setting is not modified.
+    -- Keybind Mode and drag/drop temporary grid also force slots visible.
+    if (not hasAction) and (not showGrid) and (not tempGrid) and (not keybindMode) and (not menuEditPreview) then
         button:Hide()
     else
         button:Show()
@@ -827,9 +828,13 @@ function BF.Button_OnDragStart()
             return
         end
 
-        this.bfcMovingParentBar = true
-        BF:SuppressNextClick(this, 0.25)
-        bar:StartMoving()
+        -- MouseDown normally already started moving the parent bar. Keep this
+        -- as a fallback for clients that skip the MouseDown path during a drag.
+        if not this.bfcMovingParentBar then
+            this.bfcMovingParentBar = true
+            BF:SuppressNextClick(this, 0.25)
+            bar:StartMoving()
+        end
         return
     end
 
@@ -925,6 +930,23 @@ function BF.Button_OnDragStop()
 end
 
 function BF.Button_OnMouseDown()
+    -- Menu open = Edit Mode. Make the entire bar surface draggable, including
+    -- occupied and empty action slots. Starting the parent move on mouse-down
+    -- avoids relying on Vanilla's custom-button OnDragStart behaviour, which
+    -- can be inconsistent when the cursor begins over an action button.
+    if BF:IsConfigMode() and arg1 == "LeftButton" then
+        local bar = this.parentBar
+        if bar and bar.save then
+            BF:SetActiveBar(bar)
+            if not bar.save.locked then
+                this.bfcMovingParentBar = true
+                BF:SuppressNextClick(this, 0.25)
+                bar:StartMoving()
+            end
+        end
+        return
+    end
+
     if BF:IsKeybindMode() then
         -- Never capture primary mouse buttons in Keybind Mode. Left and right
         -- mouse are reserved for camera, targeting, looting and normal UI use.
@@ -960,6 +982,16 @@ function BF.Button_OnMouseWheel()
         else
             BF:AssignKeyToButton(this, "MOUSEWHEELDOWN")
         end
+        return
+    end
+end
+
+function BF.Button_OnMouseUp()
+    if this.bfcMovingParentBar then
+        local bar = this.parentBar
+        this.bfcMovingParentBar = nil
+        BF:SuppressNextClick(this, 0.15)
+        BF:StopMovingBar(bar, true)
         return
     end
 end

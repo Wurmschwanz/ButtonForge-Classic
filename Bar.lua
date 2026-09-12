@@ -213,7 +213,13 @@ function BF:ApplyBarBackground(bar, save)
         return
     end
 
+    -- While the central menu is open, ButtonForge acts as a temporary edit
+    -- preview: every created bar gets a visible black background regardless of
+    -- its saved Background setting. The saved setting itself is never changed.
     local hide = save.hideBackground and true or false
+    if self.MenuEditPreviewActive then
+        hide = false
+    end
     if hide then
         bar:SetBackdropColor(0, 0, 0, 0)
         if bar.SetBackdropBorderColor then

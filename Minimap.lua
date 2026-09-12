@@ -169,14 +169,6 @@ function BF:RefreshMinimapMenu()
 
     self:EnsureDB()
 
-    if f.configButton then
-        if self:IsConfigMode() then
-            f.configButton:SetText("Configure Mode: ON")
-        else
-            f.configButton:SetText("Configure Mode: OFF")
-        end
-    end
-
     if f.keybindButton then
         if self:IsKeybindMode() then
             f.keybindButton:SetText("Keybind Mode: ON")
@@ -578,46 +570,57 @@ function BF:CreateMinimapMenu()
     local advancedHint = BFC_CreateLabel(f.advancedPanel, "ButtonForgeClassicMinimapAdvancedHint", "Editing and keybind tools", "GameFontHighlightSmall")
     advancedHint:SetPoint("TOPLEFT", f.advancedPanel, "TOPLEFT", 0, 0)
 
-    f.configButton = BFC_CreateMenuButton(f.advancedPanel, "ButtonForgeClassicMinimapConfig", 149, 24, "Configure Mode")
-    f.configButton:SetPoint("TOPLEFT", f.advancedPanel, "TOPLEFT", 0, -28)
-    f.configButton:SetScript("OnClick", function()
-        BF:ToggleConfigMode()
-        BF:RefreshMinimapMenu()
-    end)
-
-    f.keybindButton = BFC_CreateMenuButton(f.advancedPanel, "ButtonForgeClassicMinimapKeybind", 149, 24, "Keybind Mode")
-    f.keybindButton:SetPoint("LEFT", f.configButton, "RIGHT", 8, 0)
+    -- No Configure Mode toggle here: opening this menu automatically IS edit mode.
+    f.keybindButton = BFC_CreateMenuButton(f.advancedPanel, "ButtonForgeClassicMinimapKeybind", 306, 24, "Keybind Mode")
+    f.keybindButton:SetPoint("TOPLEFT", f.advancedPanel, "TOPLEFT", 0, -28)
     f.keybindButton:SetScript("OnClick", function()
         BF:ToggleKeybindMode()
         BF:RefreshMinimapMenu()
     end)
 
-    local advancedInfo = BFC_CreateLabel(f.advancedPanel, "ButtonForgeClassicMinimapAdvancedInfo", "New bars automatically enter Configure Mode so they are visible immediately.", "GameFontHighlightSmall")
+    local advancedInfo = BFC_CreateLabel(f.advancedPanel, "ButtonForgeClassicMinimapAdvancedInfo", "Opening this menu automatically enables Edit Mode and shows all bars, backgrounds and empty slots.", "GameFontHighlightSmall")
     advancedInfo:SetWidth(300)
     advancedInfo:SetJustifyH("LEFT")
-    advancedInfo:SetPoint("TOPLEFT", f.configButton, "BOTTOMLEFT", 0, -18)
+    advancedInfo:SetPoint("TOPLEFT", f.keybindButton, "BOTTOMLEFT", 0, -18)
 
     f:SetScript("OnShow", function()
         if not f.currentTab then BFC_ShowMenuTab(f, "bars") end
 
-        -- The configuration menu itself is the edit mode.
-        -- Opening it always enables Configure Mode so all bars can be edited immediately.
+        -- The configuration menu itself is the edit mode/preview.
+        -- While it is open, show EVERY created bar immediately, including all
+        -- empty action slots and a black bar background. This is temporary only:
+        -- per-bar Empty Slots/Background/Mouseover settings are not overwritten.
         BF:EnsureDB()
-        if not BF:IsConfigMode() then
-            ButtonForgeClassicDB.settings.configMode = true
-            BF:ApplyConfigModeToAllBars()
+        BF.MenuEditPreviewActive = true
+        ButtonForgeClassicDB.settings.configMode = true
+
+        if BF.Bars then
+            local i
+            for i = 1, table.getn(BF.Bars) do
+                local bar = BF.Bars[i]
+                if bar then
+                    bar:Show()
+                    bar.mouseoverCurrentAlpha = 1
+                    bar.mouseoverHideAt = nil
+                    bar:SetAlpha(1)
+                    if BF.SyncBarCooldownAlpha then
+                        BF:SyncBarCooldownAlpha(bar, 1)
+                    end
+                end
+            end
         end
 
+        BF:ApplyConfigModeToAllBars()
         BF:RefreshMinimapMenu()
     end)
 
     f:SetScript("OnHide", function()
-        -- Leaving the menu always returns ButtonForge to normal play mode.
+        -- Leaving the menu restores the normal play-mode presentation. Saved
+        -- per-bar Background/Empty Slots/Mouseover settings remain untouched.
         BF:EnsureDB()
-        if BF:IsConfigMode() then
-            ButtonForgeClassicDB.settings.configMode = false
-            BF:ApplyConfigModeToAllBars()
-        end
+        BF.MenuEditPreviewActive = false
+        ButtonForgeClassicDB.settings.configMode = false
+        BF:ApplyConfigModeToAllBars()
     end)
 
     self.MinimapMenu = f
