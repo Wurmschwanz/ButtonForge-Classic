@@ -220,9 +220,11 @@ function BF:ApplyBarBackground(bar, save)
             bar:SetBackdropBorderColor(0, 0, 0, 0)
         end
     else
-        bar:SetBackdropColor(0.05, 0.05, 0.18, 0.85)
+        -- Pure black bar background. Keep a subtle neutral border so the
+        -- bar remains readable without the previous blue tint.
+        bar:SetBackdropColor(0, 0, 0, 0.85)
         if bar.SetBackdropBorderColor then
-            bar:SetBackdropBorderColor(0.35, 0.35, 0.45, 1)
+            bar:SetBackdropBorderColor(0.30, 0.30, 0.30, 1)
         end
     end
 end

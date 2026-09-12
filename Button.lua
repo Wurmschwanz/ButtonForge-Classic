@@ -160,6 +160,43 @@ function BF:ButtonHasCursor()
     return self:RealCursorHasAction()
 end
 
+-- External drags (spellbook, bags, macro window, Blizzard bars) must reveal
+-- every ButtonForge drop target, not only the currently selected bar. Some
+-- Vanilla/Turtle clients do not fire CURSOR_UPDATE/ACTIONBAR_SHOWGRID reliably,
+-- so this state is also synchronized by a very light cursor poll below.
+function BF:SetExternalCursorGridActive(active)
+    active = active and true or false
+    if self.ExternalCursorGridActive == active then return end
+
+    self.ExternalCursorGridActive = active
+
+    -- Make every mouseover bar immediately usable as a drop target as well.
+    if active and self.Bars then
+        local i
+        for i = 1, table.getn(self.Bars) do
+            local bar = self.Bars[i]
+            if bar then
+                bar.mouseoverHideAt = nil
+                bar.mouseoverCurrentAlpha = 1
+                if bar.SetAlpha then bar:SetAlpha(1) end
+                if self.SyncBarCooldownAlpha then
+                    self:SyncBarCooldownAlpha(bar, 1)
+                end
+            end
+        end
+    end
+
+    self:RefreshAllButtons()
+end
+
+function BF:SyncExternalCursorGrid()
+    -- Internal ButtonForge drags already use the temporary-grid path. Do not
+    -- let the native cursor used for those drags create a second state machine.
+    if self.InternalDragSource then return end
+
+    self:SetExternalCursorGridActive(self:RealCursorHasAction())
+end
+
 function BF:ClearCursorSafe()
     self.InternalCursorActive = false
     self.InternalDragSource = nil
@@ -568,6 +605,9 @@ function BF:ToggleMacroNames()
 end
 
 function BF:IsTemporaryGridActive()
+    -- External cursor drags are global: while a spell/item/macro is being held,
+    -- empty slots on ALL ButtonForge bars stay visible until the cursor is clear.
+    if self.ExternalCursorGridActive then return true end
     if self.InternalCursorActive then return true end
     if self.TempGridUntil and GetTime and GetTime() < self.TempGridUntil then
         return true
@@ -1157,7 +1197,19 @@ BF.RangeFrame:SetScript("OnEvent", function()
     BF:RefreshAllButtonRanges()
 end)
 BF.RangeFrame:SetScript("OnUpdate", function()
-    this.Elapsed = (this.Elapsed or 0) + arg1
+    local elapsed = arg1 or 0
+    this.Elapsed = (this.Elapsed or 0) + elapsed
+    this.CursorElapsed = (this.CursorElapsed or 0) + elapsed
+
+    -- Poll only the tiny cursor state at 10 Hz. We refresh the buttons only when
+    -- the cursor changes between empty and carrying an action, so this does not
+    -- add a continuous all-button refresh. This is the fallback for clients that
+    -- miss CURSOR_UPDATE/ACTIONBAR_SHOWGRID while dragging from external frames.
+    if this.CursorElapsed >= 0.10 then
+        this.CursorElapsed = 0
+        BF:SyncExternalCursorGrid()
+    end
+
     if this.Elapsed < 0.05 then return end
     this.Elapsed = 0
     BF:RefreshAllButtonRanges()
