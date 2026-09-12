@@ -1,6 +1,6 @@
-# ⚒️ ButtonForge Classic Reforged
+# ⚒️ ButtonForge Classic 
 
-**ButtonForge Classic Reforged** is a recreation of the original **ButtonForge** addon for **Vanilla World of Warcraft 1.12**, designed for **Turtle WoW** and other Vanilla-based servers.
+**ButtonForge Classic** is a recreation of the original **ButtonForge** addon for **Vanilla World of Warcraft 1.12**, designed for **Turtle WoW** and other Vanilla-based servers.
 
 Create additional fully customizable action bars while keeping the original Vanilla look and feel.
 
@@ -16,7 +16,7 @@ Create additional fully customizable action bars while keeping the original Vani
 
 to:
 
-`ButtonForge-Classic-Reforged`
+`ButtonForge-Classic`
 
 4. Move the folder into:
 
